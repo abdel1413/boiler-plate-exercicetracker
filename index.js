@@ -4,8 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-
-app.use(cors());
+const PORT = process.env.PORT || 3010;
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static("public"));
@@ -177,8 +176,8 @@ mongoose
   .connect(process.env.DB_URI)
   .then(() => {
     console.log("app is successfully connected to db");
-    const listener = app.listen(process.env.PORT || 3010, () => {
-      console.log("Your app is listening on port " + listener.address().port);
+    app.listen(PORT, () => {
+      console.log(`Your app is listening on port ${PORT}`);
     });
   })
   .catch((e) => console.log("Ops, failed to connect"));
