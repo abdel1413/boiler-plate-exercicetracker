@@ -5,9 +5,12 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 3010;
+
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("./public"));
+
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
 });
@@ -22,65 +25,145 @@ const userModel = mongoose.model("Users", user_schema);
 //user exercise
 const exercises = new mongoose.Schema({
   user_id: { type: String, require: true },
-  description: String,
-  duration: Number,
-  date: String,
-  count: Number,
+  description: { type: String, require: true },
+  duration: { type: Number, require: true },
+  date: { type: Date, default: new Date() },
+  count: { type: Number },
 });
 
 // exercise model
 const exerciseModel = mongoose.model("exercises", exercises);
 
 //add usersers to db
-app.post("/api/users", async (req, res) => {
-  let user = req.body;
+app.post("/api/users", (req, res) => {
+  let user = req.body.username;
 
   const userDoc = new userModel({
-    username: user.username,
+    username: user,
   });
 
-  // await userDoc.save();
+  userDoc.save();
+  res.json(userDoc);
+
   // userModel
   //   .findOne({ username: user.username })
   //   .then((result) => {
-  //     console.log("r", result);
+  //     // console.log("r", result);
   //     res.json(result);
   //   })
   //   .catch((e) => console.error(e));
 
   //note we can also save userDoc in a variable while saving it into db
   //and then  use the saved variable to send user info to client side
-  const savedDoc = await userDoc.save();
 
-  try {
-    res.json(savedDoc);
-  } catch (e) {
-    res.json("Use informations are not saved in db");
-  }
+  // const savedDoc = await userDoc.save();
+  // try {
+  //   res.json(savedDoc);
+  // } catch (e) {
+  //   res.json("Use informations are not saved in db");
+  // }
 });
 
 //get all the users
 app.get("/api/users", (req, res) => {
   userModel
     .find({})
-    .sort({ _id: -1 })
-    .limit(5)
     .then((data) => {
       res.json(data);
     })
     .catch((e) => console.log(e));
 });
 
-//add an exercise based on the user's id
+// //add an exercise based on the user's id
+
+// app.post("/api/users/:_id/exercises", async (req, res) => {
+//   const userId = req.params._id;
+
+//   const exerciseObj = {
+//     userId,
+//     description: req.body.description,
+//     duration: req.body.duration,
+//   };
+//   if (req.body.date != "") {
+//     exerciseObj.date = req.body.date;
+//   }
+
+//   //const exercise = new exerciseModel(exerciseObj);
+
+//   const doc = await userModel
+//     .findById(userId)
+//     .then((data) => {
+//       //if (userId) {
+//       exercise.save();
+//       res.json({
+//         username: data.username,
+//         description: exercise.description,
+//         duration: exercise.duration,
+//         date: exercise.date.toDateString(),
+//         _id: data._id,
+//       });
+//       //}
+//     })
+//     .catch((e) => console.error(e));
+//   // try {
+//   //   if (!doc) {
+//   //     res.json("The user doesn't exist in our db");
+//   //   } else {
+//   //     const exercise = new exerciseModel(exerciseObj);
+//   //     const savedExercise = await exercise.save();
+
+//   //     res.json({
+//   //       username: doc.username,
+//   //       _id: doc._id,
+//   //       description: savedExercise.description,
+//   //       duration: savedExercise.duration,
+//   //       date: savedExercise.date
+//   //         ? exercise.date.toDateString()
+//   //         : new Date().toDateString(),
+//   //     });
+//   //   }
+//   // } catch (e) {
+//   //   console.log("er", e);
+//   // }
+// });
+
 app.post(
   "/api/users/:_id/exercises",
-  bodyParser.urlencoded({ extended: false }),
+  bodyParser.urlencoded({ extended: true }),
   async (req, res) => {
     //add new exercice to the user object
     const id = req.params._id;
     //= req.body;
 
     const body = req.body;
+
+    const exerciseObj = {
+      user_id: id,
+      description: req.body.description,
+      duration: req.body.duration,
+      date: req.body.date
+        ? new Date(req.body.date).toDateString()
+        : new Date().toDateString(),
+    };
+    console.log("objec", exerciseObj);
+
+    //,
+
+    const savedExo = new exerciseModel(exerciseObj);
+
+    // userModel
+    //   .findById(id)
+    //   .then((result) => {
+
+    //     res.json({
+    //       _id: result._id,
+    //       username: result.username,
+    //       description: savedExo.description,
+    //       duration: savedExo.duration,
+    //       date: new Date(savedExo.date).toDateString(),
+    //     });
+    //   })
+    //   .catch((e) => console.log(e));
 
     // let date = body.date;
     // if (date == "") {
@@ -92,27 +175,32 @@ app.post(
 
     //find the username by id
     const user = await userModel.findById(id);
+
     try {
       if (!user) {
         res.json("The user does not exist in db");
       } else {
         const exerciseDoc = new exerciseModel({
+          username: user.username,
           user_id: user._id,
           description: body.description,
           duration: body.duration,
-          date: body.date ? new Date(body.date) : new Date(),
+          date: body.date
+            ? new Date(body.date).toDateString()
+            : new Date().toDateString(),
         });
 
+        // ? new Date(body.date).toDateString()
+        //   : new Date().toDateString(),
         const savedExercise = await exerciseDoc.save();
 
-        const { description, duration, date } = savedExercise;
-
+        //const { description, duration, date } = savedExercise;
         res.json({
-          _id: user._id,
           username: user.username,
+          _id: user._id,
           description: savedExercise.description,
           duration: savedExercise.duration,
-          date: new Date(savedExercise.date).toDateString(),
+          date: savedExercise.date,
         });
       }
     } catch (e) {
@@ -121,7 +209,7 @@ app.post(
   }
 );
 
-//returieve all the  users and their exercises
+// //returieve all the  users and their exercises
 app.get(
   "/api/users/:_id/logs",
 
@@ -135,6 +223,7 @@ app.get(
     let { from, to, limit } = req.query;
 
     const user = await userModel.findById(id);
+    console.log("user", user);
     const dateObj = {};
     if (!user) {
       res.json("Sorry, this user doesn't exist");
@@ -148,13 +237,14 @@ app.get(
       }
     }
 
-    let filt = { user_id: id };
+    let filter = { user_id: id };
 
     if (from || to) {
-      filt.date = dateObj;
+      filter.date = dateObj;
     }
 
-    const exo = await exerciseModel.find(filt).limit(+limit ?? 200);
+    const exo = await exerciseModel.find(filter).limit(+limit ?? 200);
+    console.log("exoe", exo);
 
     const log = exo.map((e) => ({
       description: e.description,
@@ -170,7 +260,6 @@ app.get(
     });
   }
 );
-("");
 
 mongoose
   .connect(process.env.DB_URI)
