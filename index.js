@@ -27,7 +27,7 @@ const exercises = new mongoose.Schema({
   user_id: { type: String, require: true },
   description: { type: String, require: true },
   duration: { type: Number, require: true },
-  date: { type: Date, default: new Date() },
+  date: { type: Date },
   count: { type: Number },
 });
 
@@ -74,6 +74,15 @@ app.get("/api/users", (req, res) => {
     .catch((e) => console.log(e));
 });
 
+const dateFormatter = (date) => {
+  let local = new Date(date).toDateString().split(" ");
+  local[2] = date.getUTCDate();
+  local.join(" ");
+
+  return new Date(local).toDateString();
+
+  // dateFormatted = dateFormatted.substring(0, 16).replace(",", "");
+};
 // //add an exercise based on the user's id
 
 app.post(
@@ -82,57 +91,75 @@ app.post(
   async (req, res) => {
     //add new exercice to the user object
     const id = req.params._id;
-    //= req.body;
-
+    const { description, duration, date } = req.body;
     const body = req.body;
 
     const exerciseObj = {
       user_id: id,
-
       description: req.body.description,
       duration: req.body.duration,
-      date: req.body.date
-        ? new Date(req.body.date).toDateString()
-        : new Date().toDateString(),
+      date: req.body.date ? new Date(req.body.date) : new Date(),
     };
-    console.log("objec", exerciseObj);
 
-    //,
+    //find the user by id
+    await userModel
+      .findById(id)
+      .then((user) => {
+        if (!user) {
+          res.json("The user does not exist in our db");
+        } else {
+          const exerciseDoc = new exerciseModel(exerciseObj);
+          const savedExercise = exerciseDoc.save();
+          savedExercise.then((result) => {
+            res.json({
+              username: user.username,
+              description: result.description,
+              duration: result.duration,
+              date: dateFormatter(new Date(result.date)),
+              _id: user._id,
+            });
+          });
 
-    //find the username by id
-    const user = await userModel.findById(id);
-    console.log("user", user);
+          // res.json({
+          //   username: user.username,
+          //   description: exerciseObj.description,
+          //   duration: exerciseObj.duration,
+          //   date: dateFormatter(exerciseObj.date),
+          //   _id: user._id,
+          // });
+        }
+      })
+      .catch((e) => console.error(e));
 
-    try {
-      if (!user) {
-        res.json("The user does not exist in db");
-        return;
-      } else {
-        const exerciseDoc = new exerciseModel({
-          username: user.username,
-          user_id: user._id,
-          description: body.description,
-          duration: body.duration,
-          date: body.date,
-        });
+    // try {
+    //   if (!user) {
+    //     res.json("The user does not exist in db");
+    //     return;
+    //   } else {
+    //     const exerciseDoc = new exerciseModel(exerciseObj);
+    //     console.log("exo doc ", exerciseDoc);
 
-        //? new Date(body.date).toDateString()
-        //  : new Date().toDateString(),
+    //     // //  {
+    //     //   user_id: user._id,
+    //     //   description: body.description,
+    //     //   duration: body.duration,
+    //     //   date: body.date ? new Date(body.date) : new Date(),
+    //     //   }
 
-        const savedExercise = await exerciseDoc.save();
+    //     const savedExercise = await exerciseDoc.save();
+    //     console.log("exo ", savedExercise);
 
-        //const { description, duration, date } = savedExercise;
-        res.json({
-          username: user.username,
-          _id: user._id,
-          description: savedExercise.description,
-          duration: savedExercise.duration,
-          date: new Date(savedExercise.date).toDateString(),
-        });
-      }
-    } catch (e) {
-      console.log(e);
-    }
+    //     res.json({
+    //       username: user.username,
+    //       _id: user._id,
+    //       description: savedExercise.description,
+    //       duration: savedExercise.duration,
+    //       date: utcConverter(savedExercise.date),
+    //     });
+    //   }
+    // } catch (e) {
+    //   console.log(e);
+    // }
   }
 );
 
@@ -150,7 +177,7 @@ app.get(
     let { from, to, limit } = req.query;
 
     const user = await userModel.findById(id);
-    console.log("user", user);
+
     const dateObj = {};
     if (!user) {
       res.json("Sorry, this user doesn't exist");
@@ -171,7 +198,6 @@ app.get(
     }
 
     const exo = await exerciseModel.find(filter).limit(+limit ?? 200);
-    console.log("exoe", exo);
 
     const log = exo.map((e) => ({
       description: e.description,
@@ -196,4 +222,4 @@ mongoose
       console.log(`Your app is listening on port ${PORT}`);
     });
   })
-  .catch((e) => console.log("Ops, failed to connect"));
+  .catch((e) => console.log("Ops, failed to connect", e));
