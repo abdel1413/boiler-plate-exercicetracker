@@ -214,9 +214,7 @@ app.get(
 );
 
 mongoose
-  .connect(
-    "mongodb+srv://abdel1413:Mahira2022@cluster0.zweoumq.mongodb.net/fcc-exercice-tracker?retryWrites=true&w=majority"
-  )
+  .connect(process.env.DB_URI)
   .then(() => {
     console.log("app is successfully connected to db");
     app.listen(PORT, () => {
