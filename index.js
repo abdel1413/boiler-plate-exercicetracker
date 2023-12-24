@@ -95,9 +95,9 @@ app.post(
 
     const exerciseObj = {
       user_id: id,
-      description: req.body.description,
-      duration: req.body.duration,
-      date: req.body.date ? new Date(req.body.date) : new Date(),
+      description,
+      duration,
+      date: date ? new Date(date) : new Date(),
     };
 
     //find the user by id
@@ -118,47 +118,9 @@ app.post(
               _id: user._id,
             });
           });
-
-          // res.json({
-          //   username: user.username,
-          //   description: exerciseObj.description,
-          //   duration: exerciseObj.duration,
-          //   date: dateFormatter(exerciseObj.date),
-          //   _id: user._id,
-          // });
         }
       })
       .catch((e) => console.error(e));
-
-    // try {
-    //   if (!user) {
-    //     res.json("The user does not exist in db");
-    //     return;
-    //   } else {
-    //     const exerciseDoc = new exerciseModel(exerciseObj);
-    //     console.log("exo doc ", exerciseDoc);
-
-    //     // //  {
-    //     //   user_id: user._id,
-    //     //   description: body.description,
-    //     //   duration: body.duration,
-    //     //   date: body.date ? new Date(body.date) : new Date(),
-    //     //   }
-
-    //     const savedExercise = await exerciseDoc.save();
-    //     console.log("exo ", savedExercise);
-
-    //     res.json({
-    //       username: user.username,
-    //       _id: user._id,
-    //       description: savedExercise.description,
-    //       duration: savedExercise.duration,
-    //       date: utcConverter(savedExercise.date),
-    //     });
-    //   }
-    // } catch (e) {
-    //   console.log(e);
-    // }
   }
 );
 
