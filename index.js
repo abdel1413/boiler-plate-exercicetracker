@@ -78,7 +78,6 @@ const dateFormatter = (date) => {
   let local = new Date(date).toDateString().split(" ");
   local[2] = date.getUTCDate();
   local.join(" ");
-
   return new Date(local).toDateString();
 
   // dateFormatted = dateFormatted.substring(0, 16).replace(",", "");
@@ -215,7 +214,9 @@ app.get(
 );
 
 mongoose
-  .connect(process.env.DB_URI)
+  .connect(
+    "mongodb+srv://abdel1413:Mahira2022@cluster0.zweoumq.mongodb.net/fcc-exercice-tracker?retryWrites=true&w=majority"
+  )
   .then(() => {
     console.log("app is successfully connected to db");
     app.listen(PORT, () => {
